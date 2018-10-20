@@ -1,8 +1,5 @@
 import random
 
-def distance_of(value, used = True, worse = 0):
-    return (value, used, worse)
-
 #Генерирует случайные расстояния между точками
 def generate_random_distance(n, max_distance):      
     tbl = []
@@ -12,18 +9,17 @@ def generate_random_distance(n, max_distance):
             tbl[i].append([])
 
     for i in range(n):
-        tbl[i][i] = distance_of('-', False)
+        tbl[i][i] = None
         for j in range(i + 1, n):
-            tbl[i][j] = distance_of(random.randint(1, max_distance))
+            tbl[i][j] = random.randint(1, max_distance)
             tbl[j][i] = tbl[i][j]
 
     return tbl
 
 def print_distance(tbl):
-    for i in range(len(tbl)):
-        for j in range(len(tbl[i])):
-            v, u, w = tbl[i][j]
-            print('%s' % str(v), end='\t')
+    for row in tbl:
+        for dist in row:
+            print('%s' % str(dist) if dist != None else '-' , end='\t')
         print('')
     print('')
 
@@ -39,6 +35,7 @@ def set_column(tbl, j, column):
         tbl[i][j] = column[i]
 
 def column_test():
+    print('column_test()')
     tbl = generate_random_distance(5, 9)
     print_distance(tbl)    
     col3 = get_column(tbl, 3)
@@ -56,9 +53,8 @@ def minimaze(row):
     # находим минимальный при этом пропускаем неиспользуемые
     min_value = None
     for dist in row:
-        v, u, w = dist
-        if u and (min_value == None or v < min_value):
-            min_value = v
+        if dist != None and (min_value == None or dist < min_value):
+            min_value = dist
 
     if min_value == None:
         min_value = 0 #Если все неиспользуются то 0 чтобы не повлиять на общую оценку
@@ -66,15 +62,15 @@ def minimaze(row):
     #Нормализуем, путем вычитания минимума из всех используемых ячеек
     ret_row = []
     for dist in row:
-        v, u, w = dist
-        if u:
-            ret_row.append(distance_of(v - min_value, u, w))
+        if dist != None:
+            ret_row.append(dist - min_value)
         else:
             ret_row.append(dist)
 
     return ret_row, min_value
 
 def minimaze_test():
+    print('minimaze_test')
     tbl = generate_random_distance(5, 9)
     print_distance(tbl)    
     col, min_val = minimaze(get_column(tbl, 1))
@@ -82,7 +78,7 @@ def minimaze_test():
     print(min_val)
     print_distance(tbl)    
 
-minimaze_test()
+#minimaze_test()
 
 def copy(tbl):
     new_tbl = tbl.copy()
@@ -93,15 +89,13 @@ def copy(tbl):
 
 
 def copy_test():
+    print('copy_test()')
     tbl = generate_random_distance(5, 9)
 
     new_tbl = copy(tbl)    
     assert(tbl[1][2] == new_tbl[1][2])
 
-    new_tbl[1][2] = distance_of(*new_tbl[1][2])
-    assert(tbl[1][2] == new_tbl[1][2])
-
-    new_tbl[1][2] = distance_of(99)
+    new_tbl[1][2] = 99
     assert(tbl[1][2] != new_tbl[1][2])
 
     print_distance(tbl)    
