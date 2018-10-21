@@ -1,129 +1,195 @@
-import table
-import copy as copy_py
+import lib
+
 from route import Jump
 
-class FromPoint:
-    name = None
-    row = None
-    min_dist = 0
-    penalty = None
-    def __init__(self, name, row)
+# пункт отправления
+class PointFrom:
+    name = None # наименование,
+    row = None # строка таблицы расстояний
+    min_dist = 0 # расстояние до ближайшего пункта
+    penalty = None # размер штрафа если не воспользоваться ближайшим пунктом назначения
+
+    def init(self, name, row):
         self.name = name
-        self.min_dist = min(dist for dist in row if dist is not None)
-        self.row = [dist - self.min_dist
-                        if dist is not None else None
-                            for dist in row]
+        self.row = row
+        return self
 
-    def find_penalty(self)
-        self.penalty = min(dist for dist in row if dist) #Пропускаем ноли и None        
+    def minimaze(self):
+        m, self.penalty = lib.minimaze(self.row)
+        self.min_dist += m
 
+    def find_penalty(self):
+        m, self.penalty = lib.min_and_penalty(self.row)
 
-# Кортеж из трех позиций, описывает один пункт назначения, хранит по порядку
-# 0 - name - наименование, 
-# 1 - min - расстояние до ближайшего пункта, 
-# 2 - penalty - размер штрафа если не воспользоваться ближайшим
-def point_of(name):
-    return (name, 0, 0)
-def point_set_min(point, min_value):
-    n, m, p = point
-    return (n, min_value, p)
-def point_set_penalty(point, penalty):
-    n, m, p = point
-    return (n, m, penalty)
+    def clone(self, delete):
+        new = PointFrom()
+        new.init(self.name, self.row[0:delete] + self.row[delete+1:])
+        new.minimaze()
+        new.min_dist += self.min_dist
+        return new
 
-class Point:
-    min_dist = 0
-    penalty = None
-    def __init__(self, idx, name)
-        self.idx = idx
+    def print_row(self):
+        for dist in self.row:
+            print('%s' % (str(dist) if dist != None else '-'), end = '\t')
+        print('')
+
+# пункт прибытия
+class PointTo:
+    min_dist = 0 # расстояние до ближайшего пункта
+    penalty = None # размер штрафа если не воспользоваться ближайшим пунктом назначения
+    def __init__(self, points_from, j, name):
+        self.points_from = points_from #ссылается на одноименное поле в State, используется для доступа к таблице расстояний
+        self.j = j # индекс колонки в таблице расстояний
         self.name = name
-        
-    def clone(self, idx):
-        ret = Point(idx, self.name)
-        ret.min_dist = self.min_dist
 
-        return ret
-        
-    def minimaze(self, row):
-        # находим минимальный при этом пропускаем неиспользуемые
-        min_value = None
-        for dist in row:
-            if dist != None and (min_value == None or dist < min_value):
-                min_value = dist
+    def clone(self, points_from, j):
+        new = PointTo(points_from, j, self.name)
+        new.min_dist = self.min_dist
+        return new, new.minimaze()
 
-        assert(min_value != None)
-        
-        #Нормализуем, путем вычитания минимума из всех используемых ячеек
-        ret_row = []
-        for dist in row:
-            if dist != None:
-                ret_row.append(dist - min_value)
-            else:
-                ret_row.append(dist)
+    def get_column(self):
+        return [pf.row[self.j] for pf in self.points_from]
 
-        self.min_dist += min_value
+    def set_column(self, col):
+        i = 0
+        for pf in self.points_from:
+            pf.row[self.j] = col[i]
+            i += 1
 
-        return ret_row
-        
-
-def first_state(point_names, tbl):
-    state = State()
-    state.n = len(tbl)
-
-    for i in range(state.n):
-        point = Point(i, point_names[i])
-        state.point_from.append(point)
-        state.tbl.append(point.minimaze(tbl[i]))
-        
-
-    for j in range(state.n):
-        point = Point(j, point_names[j])
-        state.point_to.append(point)
-        col = table.get_column(state.tbl, j)
-        state.point_to.append(point)
-        table.set_column(self.tbl, j, col_min)
-    
-    return state
-
+    # Вычисляет min_dist и penalty, нормализует столбец
+    def minimaze(self):
+        col = self.get_column()
+        m, self.penalty = lib.minimaze(col)
+        if m > 0:
+            self.min_dist += m
+            self.set_column(col)
+        return m > 0
 
 #   Хранит текущее состояние и позволяет перейти в следующее
 #   при этом порождает новый экземпляр State
 class State:
-    tbl = [] #таблица расстояний (приведенных к нулю)
-    n = None #количество пуктов назначения
-    cost = None #оценка минимально возможного маршрута это его расстояние определяется как Sum(point_from + point_to)
-    point_from = [] #соответсвует строке i и содержит минимальное рассотояние из пункта i
-    point_to = [] #соответсвует столбцу j и содержит минимальное добавочное рассотояние до пункта j
-    zero = []
+    def __init__(self):
+        self.cost = None #оценка минимально возможного маршрута это его расстояние определяется как Sum(point_from + point_to)
+        self.points_from = [] # PointFrom - строки таблица расстояний, приведенных к нулю
+        self.points_to = [] # PointTo - столбец в таблице расстояний
+        self.zero = [] # (penalty, PointFrom, PointTo) список нулевых элементов в приведенной таблице расстояний
 
-    #Создает новое состояние после перехода from_point -> to_point
-    def new_state_after_jump(self, i, j):
-        new_state = State()
-        new_state.n = self.n - 1
+    # point_names - имена пуктов назначения
+    # tbl - таблица расстояний между пунктами назначения
+    def init(self, point_names, tbl):
+        n = len(tbl)
 
-        for i in range(n): 
-            new_state.point_from.append(self.point_from[i])
+        for i in range(n):
+            point_from = PointFrom().init(point_names[i], tbl[i][:])
+            assert(point_from.row is not tbl[i])
+            point_from.minimaze()
+            self.points_from.append(point_from)
 
+        for j in range(n):
+            point_to = PointTo(self.points_from, j, point_names[j])
+            point_to.minimaze()
+            self.points_to.append(point_to)
 
-    def normalize(self):
-        self.n = len(tbl)
-
-        #нормализуем строки
-        for row in tbl:
-            row_min, point_from[i] = minimaze(row)
-            self.tbl.append(row_min)
-
-        #нормализуем столбцы
-        for j in range(self.n):
-            col = table.get_column(self.tbl, j)
-            col_min, point_to[j] = minimaze(col)
-            table.set_column(self.tbl, j, col_min)
+        for pf in self.points_from:
+            pf.find_penalty()
 
         #делаем оценку минимального маршрута
-        self.cost = sum(point_from) + sum(point_to)
+        self.cost = sum(pf.min_dist for pf in self.points_from) + sum(pt.min_dist for pt in self.points_to)
 
-        #находим штрафы за неиспользование
+        self.find_zero()
 
+        return self
+
+    def reproduce(self):
+        #use self here to customize the new organism ...
+        return self.__class__()  # same as cls = type(self); return cls()
+
+    #Создает новое состояние после перехода from_point -> to_point
+    def new_state_after_jump(self, point_from, point_to):
+        new_state = State()
+
+        print('jump %s -> %s' % (point_from.name, point_to.name))
+
+        #клонируем таблицу расстояний исключая строку "point_from" и столбец "point_to"
+        for pf in self.points_from:
+            if pf is not point_from:
+                new_state.points_from.append(pf.clone(delete = point_to.j))
+        assert( len(new_state.points_from) + 1 == len(self.points_from) )
+
+        #копируем points_to в новое сотояние исключая один элемент point_to
+        j = 0 #новые индексы для столбцов
+        for pt in self.points_to:
+            if pt is not point_to:
+                pt_clone, min_changed = pt.clone(new_state.points_from, j)
+                new_state.points_to.append(pt_clone)
+                assert(min_changed != (pt_clone.min_dist == pt.min_dist)) #минимум по пунктам назначения не должен измениться
+                j += 1
+
+        # так как минимум по пунктам назначения не изменился то пересчитывать штраф по пунктам отправления нет смысла
+        if min_changed:
+            for pf in new_state.points_from:
+                pf.minimaze()
+
+
+        #обратный путь помечаем как неиспользуемый
+        new_state.mark_unused(point_to.name, point_from.name)
+
+        #делаем оценку минимального маршрута
+        new_state.calc_cost()
+
+        new_state.find_zero()
+
+        return new_state
+
+    def mark_unused(self, from_name, to_name):
+        for pf in self.points_from:
+            if pf.name == from_name:
+                break;
+        else:
+            return
+            #raise Exception('not found from_name')
+
+        for pt in self.points_to:
+            if pt.name == to_name:
+                break
+        else:
+            return
+            #raise Exception('not found to_name')
+
+        #print('from=%s   to=%s' % (pf.name, pt.name))
+        pf.row[pt.j] = None
+        pf.minimaze()
+        pt.minimaze()
+
+
+    def calc_cost(self): #!!!!!!!!!!!!!!!!!!!!! [0] +
+        self.cost = sum([0] + [pf.min_dist for pf in self.points_from]) + sum([0] + [pt.min_dist for pt in self.points_to])
+
+    def find_zero(self):
+        for pf in self.points_from:
+            for j in range(len(pf.row)):
+                if pf.row[j] == 0:
+                    pt = self.points_to[j]
+                    self.zero.append((pf.penalty + pt.penalty, pf, pt))
+        self.zero.sort(key=lambda item: item[0] )
+
+    # выполняем переход на ноль и создаем новое состояние соотвтествующее этому переходу
     def next_zero_jump(self):
-        jump = Jump()        
-        raise Exception('Not supported')
+        penalty, pf, pt = self.zero[0]
+        new_state = self.new_state_after_jump(pf, pt)
+        return Jump(pf.name, pt.name, new_state)
+
+    def find_last_tree_jump(self):
+        return []
+
+    def print(self):
+        print('из\\в', end='\t')
+        for pt in self.points_to:
+            print('%s(%d)' % (pt.name, pt.min_dist), end = '\t')
+        print('')
+        print('--------------------------------------------------------------')
+        for pf in self.points_from:
+            print('%s(%d) |' % (pf.name, pf.min_dist), end='\t')
+            pf.print_row()
+        print('cost=%d' % self.cost)
+        print('')
