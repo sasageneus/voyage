@@ -1,69 +1,8 @@
 import lib
-
+from point import PointFrom
+from point import PointTo
+from point import jump_distance
 from route import Jump
-
-# пункт отправления
-class PointFrom:
-    name = None # наименование,
-    row = None # строка таблицы расстояний
-    min_dist = 0 # расстояние до ближайшего пункта
-    penalty = None # размер штрафа если не воспользоваться ближайшим пунктом назначения
-
-    def init(self, name, row):
-        self.name = name
-        self.row = row
-        return self
-
-    def minimaze(self):
-        m, self.penalty = lib.minimaze(self.row)
-        self.min_dist += m
-
-    def find_penalty(self):
-        m, self.penalty = lib.min_and_penalty(self.row)
-
-    def clone(self, delete):
-        new = PointFrom()
-        new.init(self.name, self.row[0:delete] + self.row[delete+1:])
-        new.minimaze()
-        new.min_dist += self.min_dist
-        return new
-
-    def print_row(self):
-        for dist in self.row:
-            print('%s' % (str(dist) if dist != None else '-'), end = '\t')
-        print('')
-
-# пункт прибытия
-class PointTo:
-    min_dist = 0 # расстояние до ближайшего пункта
-    penalty = None # размер штрафа если не воспользоваться ближайшим пунктом назначения
-    def __init__(self, points_from, j, name):
-        self.points_from = points_from #ссылается на одноименное поле в State, используется для доступа к таблице расстояний
-        self.j = j # индекс колонки в таблице расстояний
-        self.name = name
-
-    def clone(self, points_from, j):
-        new = PointTo(points_from, j, self.name)
-        new.min_dist = self.min_dist
-        return new, new.minimaze()
-
-    def get_column(self):
-        return [pf.row[self.j] for pf in self.points_from]
-
-    def set_column(self, col):
-        i = 0
-        for pf in self.points_from:
-            pf.row[self.j] = col[i]
-            i += 1
-
-    # Вычисляет min_dist и penalty, нормализует столбец
-    def minimaze(self):
-        col = self.get_column()
-        m, self.penalty = lib.minimaze(col)
-        if m > 0:
-            self.min_dist += m
-            self.set_column(col)
-        return m > 0
 
 #   Хранит текущее состояние и позволяет перейти в следующее
 #   при этом порождает новый экземпляр State
@@ -73,10 +12,12 @@ class State:
         self.points_from = [] # PointFrom - строки таблица расстояний, приведенных к нулю
         self.points_to = [] # PointTo - столбец в таблице расстояний
         self.zero = [] # (penalty, PointFrom, PointTo) список нулевых элементов в приведенной таблице расстояний
+        self.odometer = 0 #пройденная дистанция до этого состояния
+
 
     # point_names - имена пуктов назначения
     # tbl - таблица расстояний между пунктами назначения
-    def init(self, point_names, tbl):
+    def begin(self, point_names, tbl):
         n = len(tbl)
 
         for i in range(n):
@@ -107,6 +48,8 @@ class State:
     #Создает новое состояние после перехода from_point -> to_point
     def new_state_after_jump(self, point_from, point_to):
         new_state = State()
+
+        new_state.odometer = self.odometer + jump_distance(point_from, point_to)
 
         print('jump %s -> %s' % (point_from.name, point_to.name))
 
@@ -177,10 +120,19 @@ class State:
     def next_zero_jump(self):
         penalty, pf, pt = self.zero[0]
         new_state = self.new_state_after_jump(pf, pt)
-        return Jump(pf.name, pt.name, new_state)
+        return Jump(pf.name, pt.name, new_state, jump_distance(pf, pt))
 
-    def find_last_tree_jump(self):
-        return []
+    def find_last_two_jump(self):
+        #находим
+        pf0 = self.points_from[0]
+        pt0 = self.points_to[0]
+        pf1 = self.points_from[1]
+        pt1 = self.points_to[1]
+        if (jump_distance(pf0, pt0) + jump_distance(pf1, pt1)) < (jump_distance(pf1, pt0) + jump_distance(pf0, pt1)):
+            return [Jump(pf0.name, pt0.name, self, jump_distance(pf0, pt0)), Jump(pf1.name, pt1.name, self, jump_distance(pf1, pt1))]
+        else:
+            return [Jump(pf1.name, pt0.name, self, jump_distance(pf1, pt0)), Jump(pf0.name, pt1.name, self, jump_distance(pf0, pt1))]
+
 
     def print(self):
         print('из\\в', end='\t')

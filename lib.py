@@ -1,3 +1,27 @@
+import random
+
+#Генерирует случайные расстояния между точками
+def generate_random_distance(n, max_distance):
+    tbl = []
+    for i in range(n):
+        tbl.append([])
+        for j in range(n):
+            tbl[i].append([])
+
+    for i in range(n):
+        tbl[i][i] = None
+        for j in range(i + 1, n):
+            tbl[i][j] = random.randint(1, max_distance)
+            tbl[j][i] = tbl[i][j]
+
+    return tbl
+
+def print_distance(tbl):
+    for row in tbl:
+        for dist in row:
+            print('%s' % str(dist) if dist != None else '-' , end='\t')
+        print('')
+    print('')
 
 #возвращает два наименьших по порядку
 def min_and_penalty(row):

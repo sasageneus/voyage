@@ -2,7 +2,7 @@ import os, sys
 sys.path.append(os.path.dirname(__file__))
 #print(sys.path)
 
-import table as table_py
+import lib
 
 from route import Route
 from state import State
@@ -12,13 +12,13 @@ route = Route()
 n = 5 #количество пунктов в маршруте
 point_names = ''.join(['%c' % x for x in range(97, 97+n)])  # gives 'abcdefghij'
 
-rnd_tbl = table_py.generate_random_distance(n, 9)
+rnd_tbl = lib.generate_random_distance(n, 9)
 
-table_py.print_distance(rnd_tbl)
+lib.print_distance(rnd_tbl)
 print('')
 print('')
 
-state = State().init(point_names, rnd_tbl)
+state = State().begin(point_names, rnd_tbl)
 
 state.print()
 #print(state.zero)
