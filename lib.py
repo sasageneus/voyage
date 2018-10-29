@@ -16,12 +16,29 @@ def generate_random_distance(n, max_distance):
 
     return tbl
 
+def print_names(lst):
+    for name in lst:
+        print(name.rjust(5), end='')
+    print('')
+
 def print_distance(tbl):
     for row in tbl:
         for dist in row:
-            print('%s' % str(dist) if dist != None else '-' , end='\t')
+            print(str(dist if dist != None else '-' ).rjust(5), end='')
         print('')
     print('')
+
+
+def input_table_distance():
+    n = int(input())
+    tbl = [[int(d) for d in input().split(' ')] for i in range(n)]
+
+#def load_from_file(filename):
+def test_input_table_distance():
+    input_table_distance()
+
+#test_input_table_distance()
+
 
 #возвращает два наименьших по порядку
 def min_and_penalty(row):
