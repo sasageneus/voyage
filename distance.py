@@ -15,10 +15,10 @@ def generate_random_distance(n, max_distance):
 
 
 def random_distance(n):
-    point_names = ''.join(['%c' % x for x in range(97, 97+n)])  # пункты назначения 'abcdefghij'
-    rnd_tbl = generate_random_distance(n, 9)
+    point_names = ''.join(['%c' % x for x in range(65, 65+n)])  # пункты назначения 'abcdefghij'
+    rnd_tbl = generate_random_distance(n, n * 2)
+    print_names_and_distance(point_names, rnd_tbl)
     return point_names, rnd_tbl
-
 
 
 def print_names(lst):

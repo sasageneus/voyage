@@ -45,9 +45,13 @@ class Route:
         jmp.step_num = len(self.rt) + 1
         self.rt.append(jmp)
 
+    # печатает маршрут и проверяет что все пункты пройдены
     def print_chain(self):
+        point_names_set = set()
         for jmp in self:
             print(jmp.to_point + ' ', end = '')
+            assert(jmp.to_point not in point_names_set)
+            point_names_set.add(jmp.to_point)
         print('')
 
     def print(self):

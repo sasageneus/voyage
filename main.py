@@ -12,11 +12,12 @@ from state import State
 #https://www.tutorialspoint.com/python/python_classes_objects.htm
 
 
-n = 6 #количество пунктов в маршруте
-file_name = 'matrix'
-file_write = open(file_name + '.result', 'w')
+
+#file_name = 'matrix'
+#file_write = open(file_name + '.result', 'w')
 
 def route_by_littl(point_names, tbl):
+    n = len(point_names) #количество пунктов в маршруте
     state = State().begin(point_names, tbl)
 
     state.print()
@@ -33,12 +34,10 @@ def route_by_littl(point_names, tbl):
 
     return route
 
-route = route_by_littl(*console.from_file('misha.input', distance.input_names_and_distance))
+#route = route_by_littl(*console.from_file('misha.input', distance.input_names_and_distance))
+route = route_by_littl(*distance.random_distance(12))
 
 route.finished() #найти два последних шага
 route.print_chain()
 print('')
 route.print()
-
-
-#simple_route(*lib.random_distance(n))
