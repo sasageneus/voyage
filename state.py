@@ -51,7 +51,7 @@ class State:
 
         new_state.odometer = self.odometer + jump_distance(point_from, point_to)
 
-        print('jump %s -> %s' % (point_from.name, point_to.name))
+        #print('jump %s -> %s' % (point_from.name, point_to.name))
 
         #клонируем таблицу расстояний исключая строку "point_from" и столбец "point_to"
         for pf in self.points_from:
@@ -75,7 +75,9 @@ class State:
 
 
         #обратный путь помечаем как неиспользуемый
-        new_state.mark_unused(point_to.name, point_from.name)
+        #new_state.mark_unused(point_to.name, point_from.name)
+
+        new_state.disable_comeback(point_from, point_to)
 
         #делаем оценку минимального маршрута
         new_state.calc_cost()
@@ -83,6 +85,41 @@ class State:
         new_state.find_zero()
 
         return new_state
+
+    def disable_comeback(self, point_from, point_to):
+        if point_to.last_in_chain is None:
+            name_to = point_to.name
+        else:
+            # point_to является началом цепочки, а нам нужен конец цепочки
+            name_to = point_to.last_in_chain
+
+        for pf in self.points_from:
+            if pf.name == name_to:
+                break;
+        else:
+            raise Exception('not found pf=' + name_to)
+
+        #------------------------------------------------
+        if point_from.first_in_chain is None:
+            name_from = point_from.name
+        else:
+            name_from = point_from.first_in_chain
+
+        for pt in self.points_to:
+            if pt.name == name_from:
+                break
+        else:
+            # Значит мы продолжили цепочку тоесть вышли из ее конца
+            raise Exception('not found pt=' + name_from)
+
+        pf.first_in_chain = name_from
+        pt.last_in_chain = name_to
+
+        pf.row[pt.j] = None
+        pf.minimaze()
+        pt.minimaze()
+
+        return
 
     def mark_unused(self, from_name, to_name):
         for pf in self.points_from:
@@ -143,5 +180,5 @@ class State:
         for pf in self.points_from:
             print('%s(%d) |' % (pf.name, pf.min_dist), end='\t')
             pf.print_row()
-        print('cost=%d' % self.cost)
+        print('cost=%d (%d)' % (self.odometer + self.cost, self.cost))
         print('')

@@ -10,6 +10,7 @@ class PointFrom:
     row = None # строка таблицы расстояний
     min_dist = 0 # расстояние до ближайшего пункта
     penalty = None # размер штрафа если не воспользоваться ближайшим пунктом назначения
+    first_in_chain = None # Если этот пункт конец цепочки, то здесь будет начало этой цепочки (если очередной шаг был продолжение цепочки то здесь начало этой цепочки )
 
     def init(self, name, row):
         self.name = name
@@ -28,6 +29,7 @@ class PointFrom:
         new.init(self.name, self.row[0:delete] + self.row[delete+1:])
         new.minimaze()
         new.min_dist += self.min_dist
+        new.first_in_chain = self.first_in_chain
         return new
 
     def print_row(self):
@@ -39,6 +41,8 @@ class PointFrom:
 class PointTo:
     min_dist = 0 # расстояние до ближайшего пункта
     penalty = None # размер штрафа если не воспользоваться ближайшим пунктом назначения
+    last_in_chain = None # если этот пункт начало цепочки то здесь будет конец
+
     def __init__(self, points_from, j, name):
         self.points_from = points_from #ссылается на одноименное поле в State, используется для доступа к таблице расстояний
         self.j = j # индекс колонки в таблице расстояний
@@ -47,6 +51,7 @@ class PointTo:
     def clone(self, points_from, j):
         new = PointTo(points_from, j, self.name)
         new.min_dist = self.min_dist
+        new.last_in_chain = self.last_in_chain
         return new, new.minimaze()
 
     def get_column(self):
