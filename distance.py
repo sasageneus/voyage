@@ -1,3 +1,5 @@
+import sys
+sys.path.append('')
 import console
 import random
 
@@ -32,14 +34,18 @@ def print_distance(tbl):
         for dist in row:
             print(str(dist if dist is not None else '-' ).rjust(5), end='')
         print('')
-    print('')
 
 
 def input_names_and_distance():
-    point_names = input().split(' ')
-    input()
+    line = '#'
+    while line[0] == '#':
+        line = input()
+
+    point_names = line.split() #split без параметров в качестве разделителя использует re:"\s"
+
+    input() # пропускаем строку, это разделитель
     n = len(point_names)
-    tbl = [[int(d) if d!='-' else None for d in input().split(' ')] for i in range(n)]
+    tbl = [[int(d) if d!='-' else None for d in input().split()] for i in range(n)]
 
     print_names_and_distance(point_names, tbl)
 
@@ -57,7 +63,6 @@ def print_names_and_distance(point_names, tbl):
     print_names(point_names)
     print (''.ljust(5 * n, '-'))
     print_distance(tbl)
-    print('')
     print('')
 
 
